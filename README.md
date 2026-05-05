@@ -15,16 +15,31 @@ Built on top of the Hetzner Cloud API and designed around a per-project workflow
 
 ## Install
 
-The easiest way is to grab a pre-built binary (see [Build from source](#build-from-source) for now — releases are TBD):
+Build and install into `~/bin` (default — no sudo):
 
 ```bash
-# Build, then move it onto your PATH
-bun install
-bun run build
-mv dist/gms /usr/local/bin/gms
+make install
 ```
 
-Requires `ssh-keygen` and `ssh` on your machine (both ship with macOS and most Linux distros).
+Make sure `~/bin` is on your `PATH`. If it isn't, add this to your shell rc:
+
+```bash
+export PATH="$HOME/bin:$PATH"
+```
+
+To install system-wide instead:
+
+```bash
+sudo make install BINDIR=/usr/local/bin
+```
+
+To remove later:
+
+```bash
+make uninstall                          # or: sudo make uninstall BINDIR=/usr/local/bin
+```
+
+Requires [Bun](https://bun.sh) to build, plus `ssh-keygen` and `ssh` at runtime (both ship with macOS and most Linux distros). The compiled binary is self-contained — Bun is **not** needed at runtime.
 
 ---
 
@@ -142,8 +157,7 @@ bun run src/index.ts --help
 Compile a self-contained binary for your current platform:
 
 ```bash
-bun run build
-# → ./dist/gms  (~58 MB, no Bun/Node required at runtime)
+make build                    # → ./dist/gms  (~58 MB, no Bun/Node required at runtime)
 ./dist/gms --help
 ```
 
