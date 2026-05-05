@@ -2,16 +2,19 @@ BINDIR  ?= $(HOME)/bin
 BIN      = gms
 TARGET   = dist/$(BIN)
 
-.PHONY: all build install uninstall clean deps help
+.PHONY: all build install uninstall clean deps help test test-watch test-coverage
 
 all: build
 
 help:
 	@echo "Targets:"
-	@echo "  make build      Compile dist/$(BIN) (single self-contained binary)"
-	@echo "  make install    Build and install to \$$BINDIR ($(BINDIR))"
-	@echo "  make uninstall  Remove $(BINDIR)/$(BIN)"
-	@echo "  make clean      Remove dist/"
+	@echo "  make build         Compile dist/$(BIN) (single self-contained binary)"
+	@echo "  make install       Build and install to \$$BINDIR ($(BINDIR))"
+	@echo "  make uninstall     Remove $(BINDIR)/$(BIN)"
+	@echo "  make test          Run the test suite (bun test)"
+	@echo "  make test-watch    Re-run tests on file change"
+	@echo "  make test-coverage Run tests with coverage report"
+	@echo "  make clean         Remove dist/"
 	@echo ""
 	@echo "Variables:"
 	@echo "  BINDIR=$(BINDIR)   (override with 'make install BINDIR=/usr/local/bin')"
@@ -23,7 +26,7 @@ deps:
 build: deps
 	bun run build
 
-install: build
+install: test build
 	@if ! mkdir -p "$(BINDIR)" 2>/dev/null || ! test -w "$(BINDIR)"; then \
 		echo "error: cannot write to $(BINDIR)."; \
 		echo "       try:  make install BINDIR=/usr/local/bin   (then re-run with sudo)"; \
@@ -36,6 +39,15 @@ install: build
 uninstall:
 	rm -f "$(BINDIR)/$(BIN)"
 	@echo "removed $(BINDIR)/$(BIN)"
+
+test: deps
+	bun test
+
+test-watch: deps
+	bun test --watch
+
+test-coverage: deps
+	bun test --coverage
 
 clean:
 	rm -rf dist

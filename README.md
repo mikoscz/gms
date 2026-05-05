@@ -168,6 +168,16 @@ bun run build:darwin-arm64    # → dist/gms-darwin-arm64
 bun run build:linux-x64       # → dist/gms-linux-x64
 ```
 
+### Tests
+
+```bash
+make test               # one-shot
+make test-watch         # re-run on change
+make test-coverage      # with coverage report
+```
+
+`make install` runs the test suite first, so you'll never install a broken binary on top of a passing one. Tests are isolated from your real `~/.config/gms` via an `XDG_CONFIG_HOME` redirect set in `tests/setup.ts` (preloaded by `bunfig.toml`). Network calls (Hetzner API, `ip.hetzner.com`) are stubbed at the `fetch` level — no test hits the real internet.
+
 The `harden.sh` script is embedded into the binary at build time via `import harden from "./harden.sh" with { type: "text" }`, so the resulting binary has no external file dependencies.
 
 ---

@@ -1,7 +1,42 @@
 import { parse, resolveToken, UserError } from "../cli";
-import { HetznerClient } from "../hetzner";
+import { HetznerClient, type HetznerFirewallRule } from "../hetzner";
 import { resolvePublicIPv4 } from "../public-ip";
 import { resolveServer } from "./connect";
+
+/**
+ * Add a CIDR to the SSH rule of an existing rule set, deduplicating sources.
+ * If no SSH rule exists, append a new one. Pure — exported for tests.
+ */
+export function addIpToSshRule(
+  rules: HetznerFirewallRule[],
+  sshPort: number,
+  cidr: string,
+): HetznerFirewallRule[] {
+  const port = String(sshPort);
+  let touched = false;
+  const next = rules.map((r) => {
+    if (r.direction === "in" && r.protocol === "tcp" && r.port === port) {
+      const sources = new Set([...(r.source_ips ?? []), cidr]);
+      touched = true;
+      return { ...r, source_ips: [...sources] };
+    }
+    return r;
+  });
+  if (!touched) {
+    next.push({
+      direction: "in",
+      protocol: "tcp",
+      port,
+      source_ips: [cidr],
+      description: "gms-ssh",
+    });
+  }
+  return next;
+}
+
+export function looksLikeIp(s: string): boolean {
+  return /^\d{1,3}(\.\d{1,3}){3}(\/\d{1,2})?$/.test(s);
+}
 
 const USAGE = `gms firewall — manage the server's firewall
 
@@ -82,26 +117,8 @@ async function runFirewallAllow(argv: string[]): Promise<void> {
   const client = new HetznerClient(token);
   const fw = await client.getFirewall(record.firewall_id);
 
+  const newRules = addIpToSshRule(fw.rules, record.ssh_port, cidr);
   const port = String(record.ssh_port);
-  let touched = false;
-  const newRules = fw.rules.map((r) => {
-    if (r.direction === "in" && r.protocol === "tcp" && r.port === port) {
-      const sources = new Set([...(r.source_ips ?? []), cidr]);
-      touched = true;
-      return { ...r, source_ips: [...sources] };
-    }
-    return r;
-  });
-
-  if (!touched) {
-    newRules.push({
-      direction: "in",
-      protocol: "tcp",
-      port,
-      source_ips: [cidr],
-      description: "gms-ssh",
-    });
-  }
 
   await client.setFirewallRules(fw.id, newRules);
   console.log(`gms: ✔ allowed ${cidr} on ${port}/tcp for firewall '${fw.name}'`);
@@ -109,8 +126,4 @@ async function runFirewallAllow(argv: string[]): Promise<void> {
     (r) => r.direction === "in" && r.protocol === "tcp" && r.port === port,
   );
   console.log(`gms: SSH allowlist now: ${(updated?.source_ips ?? []).join(", ")}`);
-}
-
-function looksLikeIp(s: string): boolean {
-  return /^\d{1,3}(\.\d{1,3}){3}(\/\d{1,2})?$/.test(s);
 }
