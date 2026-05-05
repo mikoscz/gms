@@ -1,8 +1,17 @@
 {
   "name": "gms-hetzner",
-  "module": "index.ts",
+  "module": "src/index.ts",
   "type": "module",
   "private": true,
+  "bin": {
+    "gms": "./src/index.ts"
+  },
+  "scripts": {
+    "dev": "bun run src/index.ts",
+    "build": "bun build --compile src/index.ts --outfile=dist/gms",
+    "build:darwin-arm64": "bun build --compile --target=bun-darwin-arm64 src/index.ts --outfile=dist/gms-darwin-arm64",
+    "build:linux-x64": "bun build --compile --target=bun-linux-x64 src/index.ts --outfile=dist/gms-linux-x64"
+  },
   "devDependencies": {
     "@types/bun": "latest"
   },
