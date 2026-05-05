@@ -1,4 +1,4 @@
-# gms — Give Me Server
+# gms — give me server
 
 A small CLI that provisions and hardens a Hetzner Cloud server for a project, then lets you `gms connect` from inside the repo whenever you need a shell.
 
