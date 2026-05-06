@@ -115,6 +115,34 @@ describe(".gms.json round-trip", () => {
     expect(loaded.key_path).toBe(record.key_path);
   });
 
+  test("repo_path is stripped from .gms.json so the file is shareable across developers", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "gms-cfg-proj-"));
+    const record = makeRecord({ name: "proj", repo_path: "/Users/alice/code/proj" });
+    const path = await writeProjectFile(dir, record);
+
+    const raw = JSON.parse(readFileSync(path, "utf8"));
+    expect(raw.repo_path).toBeUndefined();
+    expect(raw.name).toBe("proj");
+    expect(raw.server_id).toBe(record.server_id);
+
+    const loaded = await readProjectFile(path);
+    expect(loaded.repo_path).toBeUndefined();
+  });
+
+  test("readProjectFile still accepts legacy .gms.json files that include repo_path", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "gms-cfg-proj-"));
+    const path = join(dir, ".gms.json");
+    const legacy = {
+      ...makeRecord({ name: "legacy" }),
+      repo_path: "/old/abs/path",
+    };
+    writeFileSync(path, JSON.stringify(legacy));
+    const loaded = await readProjectFile(path);
+    expect(loaded.name).toBe("legacy");
+    // legacy files keep their stored repo_path on read; writes will strip it
+    expect(loaded.repo_path).toBe("/old/abs/path");
+  });
+
   test("deleteProjectFile is a no-op when the file is missing", async () => {
     const dir = mkdtempSync(join(tmpdir(), "gms-cfg-proj-"));
     await deleteProjectFile(join(dir, ".gms.json"));

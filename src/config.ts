@@ -109,18 +109,22 @@ export async function readGlobalConfig(): Promise<GlobalConfig> {
   }
 }
 
-// per-project .gms.json
+// per-project .gms.json — committed to the repo, shared across developers.
+// `repo_path` is intentionally stripped because it's specific to where each
+// developer has cloned the repo on disk; it lives only in the per-machine
+// registry (servers.json).
 export async function writeProjectFile(dir: string, record: ServerRecord): Promise<string> {
   const path = join(dir, PROJECT_FILE);
-  const stored: ServerRecord = { ...record, key_path: contractHome(record.key_path) };
+  const { repo_path: _repoPath, ...portable } = record;
+  const stored = { ...portable, key_path: contractHome(record.key_path) };
   await writeFile(path, JSON.stringify(stored, null, 2) + "\n");
   return path;
 }
 
 export async function readProjectFile(path: string): Promise<ServerRecord> {
   const text = await readFile(path, "utf8");
-  const parsed = JSON.parse(text) as ServerRecord;
-  return hydrate(parsed);
+  const parsed = JSON.parse(text) as Omit<ServerRecord, "repo_path"> & { repo_path?: string };
+  return hydrate(parsed as ServerRecord);
 }
 
 export async function deleteProjectFile(path: string): Promise<void> {

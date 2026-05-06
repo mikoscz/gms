@@ -1,8 +1,8 @@
 import { spawn } from "node:child_process";
-import { basename } from "node:path";
+import { basename, dirname } from "node:path";
 import { parse, UserError } from "../cli";
 import { findProjectFile, findProjectRoot } from "../paths";
-import { getServer, readProjectFile, type ServerRecord } from "../config";
+import { getServer, readProjectFile, upsertServer, type ServerRecord } from "../config";
 
 const USAGE = `gms connect — SSH into the project's server
 
@@ -57,7 +57,18 @@ export async function resolveServer(explicit?: string): Promise<ServerRecord | n
   if (explicit) return await getServer(explicit);
 
   const localFile = findProjectFile();
-  if (localFile) return await readProjectFile(localFile);
+  if (localFile) {
+    const record = await readProjectFile(localFile);
+    // First time this developer touches a shared .gms.json: seed the global
+    // registry so `gms list` and `gms status` find it without needing to be
+    // run from inside the repo.
+    const existing = await getServer(record.name);
+    if (!existing) {
+      await upsertServer({ ...record, repo_path: dirname(localFile) });
+      console.error(`gms: imported '${record.name}' from ${localFile} into your local registry`);
+    }
+    return record;
+  }
 
   const guess = basename(findProjectRoot());
   return await getServer(guess);

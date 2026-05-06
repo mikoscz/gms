@@ -108,7 +108,9 @@ gms destroy [name] --yes          # delete server + auto-created firewall + SSH 
 | `~/.config/gms/servers.json`          | Global registry of every server `gms` knows about             |
 | `<repo>/.gms.json`                    | Per-project metadata (server id, IP, port, key path, etc.)    |
 
-`.gms.json` doesn't contain any secrets — only Hetzner IDs, the public IP, and a path to the local key. Whether you commit it or add it to `.gitignore` is up to you.
+`.gms.json` is designed to be **committed and shared**. It contains no secrets and no per-machine paths — just Hetzner IDs, the public IP, port, login user, and a `~`-relative key path. The first time a teammate runs any `gms` command inside a repo with a checked-in `.gms.json`, it's auto-imported into their local `servers.json` (with their own clone path recorded there) so `gms list` / `gms status` work from anywhere afterward.
+
+Note: each developer still needs their own SSH key on the box (the auto-generated one stays on the original creator's machine). Add a teammate's key by SSH'ing in and appending to `~app/.ssh/authorized_keys`, and make sure their public IP is in the firewall's SSH allowlist (`gms firewall allow <name> <their-ip>`).
 
 ---
 
